@@ -1,0 +1,47 @@
+# ========== ДЕЛ 1: DEPLOYMENT ==========
+# Deployment = „менаџерот“ што се грижи апликацијата секогаш да работи
+
+apiVersion: apps/v1          # верзија на Kubernetes API за Deployment (секогаш вака, само препиши)
+kind: Deployment             # каков објект правиме: Deployment
+metadata:                    # „лична карта“ на објектот
+  name: mini-v1core          # името на Deployment-от
+spec:                        # spec = „што сакам“ (желната состојба)
+  replicas: 2                # сакам 2 копии (pods) од апликацијата да работат секогаш
+  selector:                  # како менаџерот ги препознава „своите“ pods
+    matchLabels:
+      app: mini-v1core       # „мои се сите pods со етикета app=mini-v1core“
+  template:                  # шаблон (калап) по кој се прави секој pod
+    metadata:
+      labels:
+        app: mini-v1core     # залепи ја оваа етикета на секој нов pod (мора да е иста како горе!)
+    spec:
+      containers:            # кои контејнери да работат во pod-от
+        - name: api          # име на контејнерот (го избираме ние)
+          image: mini-v1core:1.0     # кој image да го користи (оној што го вчитавме со kind load)
+          imagePullPolicy: Never     # не барај го на интернет, веќе е во кластерот
+          ports:
+            - containerPort: 8000    # апликацијата слуша на порт 8000 (како во Dockerfile)
+          readinessProbe:            # „проверка дали е спремен“
+            httpGet:
+              path: /health          # Kubernetes отвора /health (нашиот endpoint!)
+              port: 8000
+            # ако /health врати 200 OK, pod-от е Ready и добива сообраќај
+            # ако не, Kubernetes не му праќа корисници
+
+---
+# --- = нов документ во истиот фајл (раздвојувач)
+
+# ========== ДЕЛ 2: SERVICE ==========
+# Service = една стабилна „адреса“ за сите pods
+# Pods умираат и се раѓаат со нови IP адреси; Service секогаш е на исто место
+
+apiVersion: v1               # Service е во основната верзија на API
+kind: Service                # каков објект: Service
+metadata:
+  name: mini-v1core          # името на Service-от
+spec:
+  selector:
+    app: mini-v1core         # праќај сообраќај до сите pods со оваа етикета
+  ports:
+    - port: 80               # Service-от слуша на порт 80
+      targetPort: 8000       # и препраќа на порт 8000 во pod-от

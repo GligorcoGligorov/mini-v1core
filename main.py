@@ -15,7 +15,8 @@ DB: dict[int, System] = {}
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    return {"status": "ok", "version": "1.1"}
+    # додадовме "version", за да видиме која верзија одговара
 
 @app.post("/systems", status_code=201)
 async def create_system(system: System):
